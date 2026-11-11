@@ -6,10 +6,10 @@ Repository URL:
 
 | Item | Version or name |
 | --- | --- |
-| JDK | |
-| Maven | |
-| IDE | |
-| AI tool and exact model, if you used one | |
+| JDK | Oracle JDK 23.0.1 (`java`); OpenJDK 27 (used by Maven) |
+| Maven | Apache Maven 3.10.0 |
+| IDE | Visual Studio Code |
+| AI tool and exact model, if you used one | Codex, GPT-6.1-sol |
 
 ## Part 0. From a store in memory to H2
 
@@ -106,11 +106,20 @@ flowchart TB
     cli
     service
     domain
-    storage
+    storage["storage, accesses the data store"]
+    parcelpoint --> cli
+    parcelpoint --> service
+    parcelpoint --> storage
+    cli --> domain
     cli --> service
+    service --> domain
+    service --> storage
+    storage --> domain
 ```
 
 State whether cli depends on storage, and explain why.
+
+The cli package has no direct dependency on storage because it accesses parcels through ParcelService, which uses ParcelRepository.
 
 A2 Complete the class diagram of the data management layer with ParcelService, the interface ParcelRepository with its three operations, and the two classes that implement it.
 
@@ -119,7 +128,15 @@ classDiagram
     class ParcelService
     class ParcelRepository {
         <<interface>>
+        +save(Parcel parcel) void
+        +findByCode(String code) Optional~Parcel~
+        +findAll() List~Parcel~
     }
+    class InMemoryParcelRepository
+    class H2ParcelRepository
+    ParcelService --> ParcelRepository : repository
+    ParcelRepository <|.. InMemoryParcelRepository
+    ParcelRepository <|.. H2ParcelRepository
 ```
 
 A3 Draw a sequence diagram for the command `store P1003 S1003 MEDIUM`, from the staff member to the repository. Show each message as an operation of the class that receives it.
@@ -128,23 +145,59 @@ A3 Draw a sequence diagram for the command `store P1003 S1003 MEDIUM`, from the 
 sequenceDiagram
     actor Staff
     participant cli as :ParcelCommandLine
+    participant service as :ParcelService
+    participant locker as current :Locker
+    participant parcel as :Parcel
+    participant repository as :ParcelRepository
     Staff->>cli: store P1003 S1003 MEDIUM
+    cli->>cli: handle(words)
+    cli->>cli: store(words)
+    cli->>parcel: Parcel("P1003", "S1003", MEDIUM)
+    cli->>service: store(parcel)
+    loop Visit lockers in order until the first fit
+        service->>locker: fits(parcel)
+        locker-->>service: true or false
+        alt fits returns true
+            service->>locker: setParcel(parcel)
+            service->>locker: getNumber()
+            locker-->>service: number
+            service->>parcel: storeIn(number)
+            service->>repository: save(parcel)
+            break Return after saving the first fit
+                service-->>cli: Optional.of(locker)
+            end
+        end
+    end
 ```
 
 Explain why the last lifeline is the interface ParcelRepository rather than H2ParcelRepository.
 
+The last lifeline is ParcelRepository because ParcelService calls save through this interface. Either H2ParcelRepository or InMemoryParcelRepository can implement it without changing the service.
+
 ## Part B. Design questions
 
 1. Identify the files that you changed to move from the store in memory to H2, and explain why no other class had to change. Use the terms of this course.
+```text
+I changed Main.java to use H2ParcelRepository and completed its findAll method. The ParcelRepository interface keeps coupling low, so other classes work with either implementation through polymorphism.
+```
 
 2. The PARCEL table stores the size of a parcel as SMALL, MEDIUM or LARGE rather than as 1, 2 or 3. Identify the type of connascence between ParcelSize and the table in each case, and explain which one is weaker.
+```text
+Names create connascence of name, while numbers create connascence of convention through an agreed mapping. Connascence of name is weaker because the sizes are clear without remembering numeric meanings.
+```
 
 3. Project Phase 2 asks for a data store that needs no separate server. Explain why an embedded database such as H2 meets this rule, and describe the limit of an embedded database that Step 0.8 showed.
+```text
+H2 runs inside the Java application, so no separate server is needed. Step 0.8 showed that the H2 Shell locks the database, preventing the application from opening it at the same time.
+```
 
 4. State the data store that you would choose for your Project Phase 2 team, files or an embedded database, the requirement that drives the choice, and the package that will access it.
+```text
+I would choose H2 to keep records between runs without a separate server. The storage package would access it through repository classes.
+```
 
 ## AI usage declaration
 
 | AI tool and exact model | Date | Purpose | Files or answers it produced or changed | How you checked its output |
 | --- | --- | --- | --- | --- |
-| | | | | |
+| Codex, GPT-6.1-sol | 11 November 2026 | Help debug why findAll did not show saved parcels. | Reviewed H2ParcelRepository.findAll and suggested rebuilding the JAR and checking the database path; no Java code changed by AI. | Compared the advice with the source code and Step 0.11; runtime verification is not recorded here. |
