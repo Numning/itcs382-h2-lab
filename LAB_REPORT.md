@@ -81,11 +81,17 @@ public List<Parcel> findAll() {
 ```
 
 Commit that adds findAll:
+```text
+7f7739c
+```
 
 0.12 Output of `SELECT * FROM PARCEL;` after the pickup:
 
 ```text
-
+CODE  | STUDENT_ID | PARCEL_SIZE | STATUS    | LOCKER_NUMBER
+P1001 | S1001      | SMALL       | PICKED_UP | null
+P1002 | S1002      | LARGE       | STORED    | 3
+(2 rows, 17 ms)
 ```
 
 0.13 Optional. Describe what `find P9999'OR'1'='1` showed while the SQL was joined from strings, and what it showed after you put the placeholder back.
