@@ -13,14 +13,20 @@ Repository URL:
 
 ## Part 0. From a store in memory to H2
 
-Commit of the starter, before any change: b3ad4b9
+Commit of the starter, before any change: 
+```text
+b3ad4b9
+```
 
-0.3 Your prediction for `staff`, written before the second run: "Free lockers: 1"
+0.3 Your prediction for `staff`, written before the second run: 
+```text
+Free lockers: 1
+```
 
 Output of the second run, for `staff` and `quit`:
 
 ```text
-    Free lockers: 3
+Free lockers: 3
 ```
 
 State in one sentence where you think the parcels of the first run were kept. : It have been drop from database since quit fro the first run.
@@ -28,25 +34,50 @@ State in one sentence where you think the parcels of the first run were kept. : 
 0.5 The line of Main that you would change to keep the parcels somewhere else:
 
 ```java
-    ParcelRepository repository = new InMemoryParcelRepository();
+ParcelRepository repository = new InMemoryParcelRepository();
 ```
 
-0.6 Commit of the switch to H2:
+0.6 Commit of the switch to H2: 
+```text
+8a46741
+```
 
 0.7 Output of `SELECT * FROM PARCEL;` after you stored two parcels:
 
 ```text
-
+CODE  | STUDENT_ID | PARCEL_SIZE | STATUS | LOCKER_NUMBER
+P1001 | S1001      | SMALL       | STORED | 1
+P1002 | S1002      | LARGE       | STORED | 3
+(2 rows, 16 ms)
 ```
 
-0.8 Explain why ParcelPoint could not start while the H2 Shell was open, and identify the class that wrote the message `Cannot create the PARCEL table`.
+0.8 Explain why ParcelPoint could not start while the H2 Shell was open, and identify the class that wrote the message `Cannot create the PARCEL table`. 
+```text
+Because embedded database belong to program from first terminal that open it currently, and H2ParcelRepository class is the class that wrote "Cannot create the PARCEL table"
+```
 
-0.9 Explain why `staff` shows no parcel while `find` shows each one, and why all three lockers look free.
+0.9 Explain why `staff` shows no parcel while `find` shows each one, and why all three lockers look free. 
+```text
+Because method findByCode query the data from database and return actual data, but method findAll doesn't query or check anything yet then just return the empty list.
+```
 
 0.11 Your findAll method:
 
 ```java
-
+public List<Parcel> findAll() {
+        String sql = "SELECT * FROM PARCEL ORDER BY CODE";
+        List<Parcel> parcels = new ArrayList<>();
+        try (Connection connection = connect();
+            PreparedStatement statement = connection.prepareStatement(sql);
+            ResultSet row = statement.executeQuery()) {
+                while(row.next()){
+                    parcels.add(toParcel(row));
+                }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Cannot read the parcels", e);
+        }
+        return parcels;
+    }
 ```
 
 Commit that adds findAll:
