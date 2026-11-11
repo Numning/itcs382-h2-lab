@@ -13,22 +13,22 @@ Repository URL:
 
 ## Part 0. From a store in memory to H2
 
-Commit of the starter, before any change:
+Commit of the starter, before any change: b3ad4b9
 
-0.3 Your prediction for `staff`, written before the second run:
+0.3 Your prediction for `staff`, written before the second run: "Free lockers: 1"
 
 Output of the second run, for `staff` and `quit`:
 
 ```text
-
+    Free lockers: 3
 ```
 
-State in one sentence where you think the parcels of the first run were kept.
+State in one sentence where you think the parcels of the first run were kept. : It have been drop from database since quit fro the first run.
 
 0.5 The line of Main that you would change to keep the parcels somewhere else:
 
 ```java
-
+    ParcelRepository repository = new InMemoryParcelRepository();
 ```
 
 0.6 Commit of the switch to H2:
